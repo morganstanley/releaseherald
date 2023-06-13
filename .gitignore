@@ -1,0 +1,10 @@
+dist
+build
+site
+*.egg-info
+.idea
+.mypy_cache
+.ruff_cache
+.doit.db*
+.pytest_cache
+__pycache__

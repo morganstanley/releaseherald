@@ -1,0 +1,102 @@
+[build-system]
+requires = ["setuptools>=67.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "releaseherald"
+dynamic = ["version", "readme"]
+
+description = "Git tag based release note generator"
+license = {file = "LICENSE"}
+authors = [
+        { name = "Morgan Stanley", email = "eti-testplan@morganstanley.com" }
+]
+keywords = ["releasenotes", "release", "whatsnew", "git"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Version Control :: Git",
+    ]
+
+requires-python = ">=3.7"
+dependencies = [
+    "boltons",
+    "click",
+    "GitPython",
+    "Jinja2",
+    "parse",
+    "toml",
+    "typing_extensions",
+    "pydantic<2.0",
+    "pluggy"
+]
+
+[project.urls]
+Homepage = "https://github.com/morganstanley/releaseherald"
+Repository = "https://github.com/morganstanley/releaseherald.git"
+
+
+[project.scripts]
+releaseherald = "releaseherald.main:main"
+
+[tool.setuptools.package-data]
+"releaseherald.templates" = ["*.rst"]
+
+[tool.setuptools.dynamic]
+version = { attr = "releaseherald.version.VERSION" }
+readme = { file = "README.md", content-type = "text/markdown"}
+
+[project.optional-dependencies]
+dev = [
+    "black ~= 23.3",
+    "mypy",
+    "types-toml",
+    "ruff",
+    "pytest",
+    "doit"
+]
+docs = [
+    "mkdocs",
+    "mkdocs-click",
+    "mkdocs-mermaid2-plugin",
+    "mkdocs-awesome-pages-plugin",
+    "mkdocstrings[python]",
+]
+
+[tool.ruff]
+ignore = ["E501"]
+
+[tool.ruff.pycodestyle]
+max-doc-length = 120
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+ [tool.bumpver]
+    current_version = "0.0.1"
+    version_pattern = "MAJOR.MINOR.PATCH[PYTAGNUM]"
+    commit_message = "bump version {old_version} -> {new_version}"
+    commit = true
+    tag = true
+    push = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+"src/releaseherald/version.py" = [
+    'VERSION = "{version}"'
+]
+
+[tool.releaseherald]
+news_fragments_directory = "release_notes/news_fragments"
+news_file = "release_notes/release_notes.template.md"
+template = "release_notes/release_notes_version.template.md"
+insert_marker = '^(\s)*\[\/\/]: # "releaseherald_insert"(\s)*$'

@@ -1,0 +1,34 @@
+site_name: ReleaseHerald
+
+theme:
+  name: material
+  palette:
+    scheme: default
+    primary: green
+watch:
+  - "./README.md"
+markdown_extensions:
+  - def_list
+  - mkdocs-click
+  - admonition
+  - attr_list
+  - pymdownx.snippets
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+
+plugins:
+  - search
+  - awesome-pages
+  - mermaid2:
+      version: 8.14.0
+  - mkdocstrings:
+      watch:
+        - src/releaseherald
+      handlers:
+        python:
+          selection:
+            docstring_style: google
