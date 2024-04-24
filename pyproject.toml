@@ -34,7 +34,7 @@ dependencies = [
     "parse",
     "toml",
     "typing_extensions",
-    "pydantic<2.0",
+    "pydantic<3.0",
     "pluggy"
 ]
 
