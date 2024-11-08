@@ -44,7 +44,7 @@ def task_mypy():
 
 
 def task_lint():
-    return {"actions": ["ruff src"]}
+    return {"actions": ["ruff check src"]}
 
 
 def task_black():
