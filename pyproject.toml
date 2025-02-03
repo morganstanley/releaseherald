@@ -55,7 +55,7 @@ readme = { file = "README.md", content-type = "text/markdown"}
 
 [project.optional-dependencies]
 dev = [
-    "black >= 23.3,< 25.0",
+    "black >= 23.3,< 26.0",
     "mypy",
     "types-toml",
     "ruff",
