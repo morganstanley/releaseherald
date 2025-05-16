@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Tuple, Union, Any, Optional, Dict
 
 import click
-import toml
+import tomli
 from boltons.iterutils import pairwise, get_path
 from git import Repo, Tag
 from pluggy import PluginManager
@@ -26,7 +26,8 @@ CONFIG_KEY_IN_PYPROJECT = ("tool", "releaseherald")
 
 
 def load_config(config_path: Path, config_key: Tuple = ()) -> Configuration:
-    config = get_path(toml.load(config_path), config_key, default={})
+    with open(config_path, "rb") as f:
+        config = get_path(tomli.load(f), config_key, default={})
     config["config_path"] = config_path
     return Configuration.parse_obj(config)
 

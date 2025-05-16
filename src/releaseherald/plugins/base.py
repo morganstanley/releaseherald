@@ -1,10 +1,10 @@
 from io import StringIO
 from itertools import takewhile
 from pathlib import Path
-from typing import List, Pattern, Dict, Any, Optional
+from typing import List, Pattern, Dict, Any, Optional, cast
 
 import click
-from git import Repo, Tag, Commit  # type: ignore
+from git import Repo, Tag, Commit
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
 
@@ -206,7 +206,7 @@ def get_tags(repo: Repo, version_tag_pattern: Pattern):
     tags = [
         tag
         for tag in repo.tags
-        if version_tag_pattern.match(tag.name)
+        if (version_tag_pattern.match(tag.name) or tag.name == ROOT_TAG)
         and repo.is_ancestor(tag.commit, repo.head.commit)
     ]
     tags.sort(key=lambda tag: tag.commit.committed_date, reverse=True)
@@ -220,11 +220,12 @@ def get_news_between_commits(
     commit1: Commit, commit2: Commit, news_fragment_dir: Path
 ) -> List[News]:
     diffs = commit1.diff(commit2)
+    # NOTE: ``a_path`` won't be None unless ``diff`` called with ``create_patch=True``
     paths = [
-        diff.a_path
+        cast(str, diff.a_path)
         for diff in diffs
         if diff.change_type in ("A", "C", "R", "M")
-        and news_fragment_dir == Path(diff.a_path).parent
+        and news_fragment_dir == Path(cast(str, diff.a_path)).parent
     ]
     return [
         News(file_name=path, content=file_content_from_commit(commit2, path))

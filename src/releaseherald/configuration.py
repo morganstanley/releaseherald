@@ -53,9 +53,9 @@ class Configuration(BaseModel):
         extra = "allow"
 
     def as_default_options(self) -> Dict[str, Any]:
-        default_options_callbacks: Dict[
-            str, List[DefaultOptionsCallable]
-        ] = self.Config.default_options_callbacks
+        default_options_callbacks: Dict[str, List[DefaultOptionsCallable]] = (
+            self.Config.default_options_callbacks
+        )
 
         result: DefaultDict[str, Any] = defaultdict(dict)
         for command, callbacks in default_options_callbacks.items():
