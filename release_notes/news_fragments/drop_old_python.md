@@ -1,0 +1,1 @@
+Drop support on Python 3.7 & 3.8.
