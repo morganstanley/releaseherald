@@ -1,0 +1,1 @@
+Always select RELEASEHERALD_ROOT tag during version collecting.
