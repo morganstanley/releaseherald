@@ -29,7 +29,7 @@ MODEL = TypeVar("MODEL", bound=BaseModel)
 class Configuration(BaseModel):
     """
     This class represent the configuration read from the config file.
-    See attribute details in [Configuration](/configuration)
+    See attribute details in [Configuration](../configuration.md)
     """
 
     config_path: Path
@@ -53,9 +53,9 @@ class Configuration(BaseModel):
         extra = "allow"
 
     def as_default_options(self) -> Dict[str, Any]:
-        default_options_callbacks: Dict[
-            str, List[DefaultOptionsCallable]
-        ] = self.Config.default_options_callbacks
+        default_options_callbacks: Dict[str, List[DefaultOptionsCallable]] = (
+            self.Config.default_options_callbacks
+        )
 
         result: DefaultDict[str, Any] = defaultdict(dict)
         for command, callbacks in default_options_callbacks.items():
@@ -70,6 +70,7 @@ class Configuration(BaseModel):
         """
         Helper for plugin developers to parse a section of the config with the passed
         model, and replace the dictionary with the model object
+
         Args:
             attribute_name: the attribute holding the plugin config
             sub_config_model: the model describe the sub config
@@ -109,6 +110,14 @@ class Configuration(BaseModel):
             values[path_config] = _resolve_path(root, path)
 
         return values
+
+    @root_validator
+    def validate_last_tag(cls, values):
+        if not values["last_tag"]:
+            return values
+        if re.match(values["version_tag_pattern"], values["last_tag"]):
+            return values
+        raise ValueError("``last_tag`` must match ``version_tag_pattern``")
 
 
 def _config_root(config_path: Path):

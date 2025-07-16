@@ -53,4 +53,3 @@ def task_black():
 
 def task_testall():
     return {"actions": None, "task_dep": ["black", "lint", "pytest", "mypy"]}
-
