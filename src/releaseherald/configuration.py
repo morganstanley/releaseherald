@@ -111,6 +111,14 @@ class Configuration(BaseModel):
 
         return values
 
+    @root_validator
+    def validate_last_tag(cls, values):
+        if not values["last_tag"]:
+            return values
+        if re.match(values["version_tag_pattern"], values["last_tag"]):
+            return values
+        raise ValueError("``last_tag`` must match ``version_tag_pattern``")
+
 
 def _config_root(config_path: Path):
     return config_path.parent if config_path.is_file() else config_path
