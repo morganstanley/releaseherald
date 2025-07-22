@@ -38,8 +38,7 @@ class Extractor(ABC):
         pass
 
     @abstractmethod
-    def match(self, text: str) -> Optional[Dict[str, str]]:
-        ...
+    def match(self, text: str) -> Optional[Dict[str, str]]: ...
 
 
 class RegexExtractor(Extractor):
