@@ -1,3 +1,5 @@
+![Lifecycle Active](https://img.shields.io/badge/Lifecycle-Active-brightgreen)
+
 # Introduction
 
 `releaseherald` is a utility that can generate release notes. The only help it needs from
