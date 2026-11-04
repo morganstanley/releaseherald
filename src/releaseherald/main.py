@@ -29,7 +29,7 @@ def load_config(config_path: Path, config_key: Tuple = ()) -> Configuration:
     with open(config_path, "rb") as f:
         config = get_path(tomli.load(f), config_key, default={})
     config["config_path"] = config_path
-    return Configuration.parse_obj(config)
+    return Configuration.model_validate(config)
 
 
 ConfigKeyPathType = Union[Tuple, Tuple[Any, ...]]
@@ -155,7 +155,7 @@ def setup(
 
     for option in generate_command_options:
         generate.params.extend(option.options)
-        Configuration.Config.default_options_callbacks["generate"].append(
+        Configuration.default_options_callbacks["generate"].append(
             option.default_opts_callback
         )
 

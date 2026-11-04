@@ -3,7 +3,7 @@ from typing import Optional, Pattern, List
 
 from boltons.iterutils import pairwise
 from git import Commit, Repo  # type: ignore
-from pydantic import BaseModel, root_validator, parse_obj_as
+from pydantic import BaseModel, TypeAdapter, model_validator
 
 import releaseherald.plugins
 from releaseherald.configuration import (
@@ -22,7 +22,7 @@ from releaseherald.plugins.interface import (
 
 
 class SubmoduleConfig(BaseModel):
-    """
+    r"""
     Attributes:
         name: The name of the submodule as referenced by git
         display_name: This name is passed to the rendering to be used. **_Default:_** same as `name`
@@ -31,16 +31,14 @@ class SubmoduleConfig(BaseModel):
     """
 
     name: str
-    display_name: str = None  # type: ignore
+    display_name: Optional[str] = None
     news_fragments_directory: Path = DEFAULT_FRAGMENTS_DIR
     version_tag_pattern: Pattern = DEFAULT_VERSION_TAG_PATTERN
 
-    @root_validator
-    def default_display_name(cls, values):
-        values = values.copy()
-        display_name = values.get("display_name")
-        values["display_name"] = display_name or values["name"]
-        return values
+    @model_validator(mode="after")
+    def default_display_name(self) -> "SubmoduleConfig":
+        self.display_name = self.display_name or self.name
+        return self
 
 
 class Submodules:
@@ -54,7 +52,9 @@ class Submodules:
         submodules = getattr(config, "submodules", None)
 
         if submodules:
-            self.submodule_config = parse_obj_as(List[SubmoduleConfig], submodules)
+            self.submodule_config = TypeAdapter(List[SubmoduleConfig]).validate_python(
+                submodules
+            )
 
         setattr(config, "submodules", self.submodule_config)
 
@@ -107,7 +107,9 @@ def get_submodule_news(
 
         commits = [submodule_to, *tag_commits, submodule_from]
 
-        snews = SubmoduleNews(name=submodule.name, display_name=submodule.display_name)
+        snews = SubmoduleNews(
+            name=submodule.name, display_name=submodule.display_name or submodule.name
+        )
 
         for c_to, c_from in pairwise(commits):
             snews.news.extend(

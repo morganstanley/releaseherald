@@ -7,13 +7,14 @@ from typing import (
     Callable,
     Dict,
     Any,
+    ClassVar,
     Optional,
     Type,
     TypeVar,
     DefaultDict,
 )
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from releaseherald import templates
 
@@ -45,20 +46,16 @@ class Configuration(BaseModel):
     update: bool = True
     plugins: Optional[List[str]] = None
 
-    class Config:
-        paths_to_resolve: List[str] = ["template", "news_file"]
-        default_options_callbacks: Dict[str, List[DefaultOptionsCallable]] = {
-            "generate": []
-        }
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
+
+    paths_to_resolve: ClassVar[List[str]] = ["template", "news_file"]
+    default_options_callbacks: ClassVar[Dict[str, List[DefaultOptionsCallable]]] = {
+        "generate": []
+    }
 
     def as_default_options(self) -> Dict[str, Any]:
-        default_options_callbacks: Dict[str, List[DefaultOptionsCallable]] = (
-            self.Config.default_options_callbacks
-        )
-
         result: DefaultDict[str, Any] = defaultdict(dict)
-        for command, callbacks in default_options_callbacks.items():
+        for command, callbacks in self.default_options_callbacks.items():
             for callback in callbacks:
                 callback(result[command])
 
@@ -80,7 +77,7 @@ class Configuration(BaseModel):
 
         """
         config = getattr(self, attribute_name, None)
-        parsed_config = sub_config_model.parse_obj(config) if config else None
+        parsed_config = sub_config_model.model_validate(config) if config else None
         setattr(self, attribute_name, parsed_config)
         return parsed_config
 
@@ -100,23 +97,21 @@ class Configuration(BaseModel):
         root = _config_root(self.config_path)
         return _resolve_path(root, path)
 
-    @root_validator
-    def resolve_paths(cls, values):
-        config_path = Path(values["config_path"])
-        root = _config_root(config_path)
-        values = values.copy()
-        for path_config in cls.__config__.paths_to_resolve:
-            path = Path(values[path_config])
-            values[path_config] = _resolve_path(root, path)
+    @model_validator(mode="after")
+    def resolve_paths(self) -> "Configuration":
+        root = _config_root(self.config_path)
+        for path_config in self.paths_to_resolve:
+            path = Path(getattr(self, path_config))
+            setattr(self, path_config, _resolve_path(root, path))
 
-        return values
+        return self
 
-    @root_validator
-    def validate_last_tag(cls, values):
-        if not values["last_tag"]:
-            return values
-        if re.match(values["version_tag_pattern"], values["last_tag"]):
-            return values
+    @model_validator(mode="after")
+    def validate_last_tag(self) -> "Configuration":
+        if not self.last_tag:
+            return self
+        if re.match(self.version_tag_pattern, self.last_tag):
+            return self
         raise ValueError("``last_tag`` must match ``version_tag_pattern``")
 
 

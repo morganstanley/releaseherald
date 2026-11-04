@@ -118,7 +118,7 @@ class BasePlugin:
 
 class GenerateParams(BaseModel):
     update: bool
-    target: Optional[str]
+    target: Optional[str] = None
 
 
 class BaseOutputPlugin:

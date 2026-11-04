@@ -86,12 +86,8 @@ class PluginConfig(BaseModel):
             CommandOptionsInfo
         )
 
-        for config_field in cls.__fields__.values():
-            metadata = getattr(config_field.outer_type_, "__metadata__", None)
-            if not metadata:
-                continue
-
-            for annotation in metadata:
+        for field_name, field_info in cls.model_fields.items():
+            for annotation in field_info.metadata:
                 if not isinstance(annotation, FromCommandline):
                     continue
                 command = command_options[annotation.command]
@@ -99,11 +95,11 @@ class PluginConfig(BaseModel):
                 command.options.append(annotation.option)
                 if not annotation.option.name:
                     raise AttributeError(
-                        f"{config_field.name} field config option should have a name "
+                        f"{field_name} field config option should have a name "
                         f"in {cls.__name__}"
                     )
                 command.update_mappings.append(
-                    UpdateMapping(config_field.name, annotation.option.name)
+                    UpdateMapping(field_name, annotation.option.name)
                 )
 
         return dict(command_options)

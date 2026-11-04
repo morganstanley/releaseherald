@@ -27,7 +27,7 @@ class FilenameMetadataExtractorConfig(BaseModel):
 
     type: ParserType
     pattern: str
-    target_attribute: Optional[str]
+    target_attribute: Optional[str] = None
 
 
 CONFIG_ATTRIBUTE = "filename_metadata_extractor"
