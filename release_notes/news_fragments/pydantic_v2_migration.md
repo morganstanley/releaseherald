@@ -1,1 +1,1 @@
-Migrate to Pydantic v2.
+Migrate to Pydantic v2. Plugins using Pydantic models must also migrate to v2.
