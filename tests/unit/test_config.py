@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import pytest
 from pydantic import BaseModel
@@ -78,7 +77,7 @@ def test_default_options_callbacks():
 
 class SubConfig(BaseModel):
     value: int
-    label: Optional[str] = None
+    label: str | None = None
 
 
 def test_parse_sub_config():

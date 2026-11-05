@@ -1,10 +1,11 @@
 from io import StringIO
 from itertools import takewhile
 from pathlib import Path
-from typing import List, Pattern, Dict, Any, Optional, cast
+from re import Pattern
+from typing import Any, cast
 
 import click
-from git import Repo, Tag, Commit
+from git import Commit, Repo, Tag
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
 
@@ -12,11 +13,11 @@ import releaseherald.plugins
 from releaseherald.configuration import Configuration
 from releaseherald.plugins import CommitInfo
 from releaseherald.plugins.interface import (
-    VersionNews,
+    CommandOptions,
     MutableProxy,
     News,
     Output,
-    CommandOptions,
+    VersionNews,
 )
 
 
@@ -31,7 +32,7 @@ class BasePlugin:
         self.config = config
 
     @releaseherald.plugins.hookimpl
-    def get_command_options(self, command: str) -> Optional[CommandOptions]:
+    def get_command_options(self, command: str) -> CommandOptions | None:
         command_options = (
             self._get_generate_options() if command == "generate" else None
         )
@@ -47,25 +48,27 @@ class BasePlugin:
             ),
         ]
 
-        def default_opts_callback(default_options: Dict[str, Any]):
+        def default_opts_callback(default_options: dict[str, Any]):
             default_options["unreleased"] = self.config.unreleased
 
         return CommandOptions(options, default_opts_callback)
 
     @releaseherald.plugins.hookimpl
-    def on_start_command(self, command: str, kwargs: Dict[str, Any]):
+    def on_start_command(self, command: str, kwargs: dict[str, Any]):
         if "unreleased" in kwargs:
             self.config.unreleased = kwargs["unreleased"]
 
     @releaseherald.plugins.hookimpl(tryfirst=True)
-    def process_tags(self, repo: Repo, tags: List[Tag]):
+    def process_tags(self, repo: Repo, tags: list[Tag]):
         tags.clear()
 
         all_tags = get_tags(repo, self.config.version_tag_pattern)
 
         # tear of things after last tag
         last_tag_name = self.config.last_tag or ROOT_TAG
-        last_tag = repo.tags[last_tag_name] if last_tag_name in repo.tags else None
+        last_tag = None
+        if last_tag_name in repo.tags:
+            last_tag = repo.tags[last_tag_name]
         if last_tag:
             tags.extend(takewhile(lambda tag: tag != last_tag, all_tags))
             tags.append(last_tag)
@@ -73,7 +76,7 @@ class BasePlugin:
             tags.extend(all_tags)
 
     @releaseherald.plugins.hookimpl(tryfirst=True)
-    def process_commits(self, repo: Repo, tags: List[Tag], commits: List[CommitInfo]):
+    def process_commits(self, repo: Repo, tags: list[Tag], commits: list[CommitInfo]):
         commits.clear()
         commits.extend(CommitInfo(tag=tag, commit=tag.commit) for tag in tags)
         if self.config.unreleased and (
@@ -87,7 +90,7 @@ class BasePlugin:
         repo: Repo,
         commit_from: CommitInfo,
         commit_to: CommitInfo,
-        news: List[News],
+        news: list[News],
     ):
         news.clear()
         git_news = get_news_between_commits(
@@ -103,7 +106,7 @@ class BasePlugin:
         repo: Repo,
         commit_from: CommitInfo,
         commit_to: CommitInfo,
-        news: List[News],
+        news: list[News],
         version_news: MutableProxy[VersionNews],
     ):
         version_news.value = VersionNews(
@@ -118,7 +121,7 @@ class BasePlugin:
 
 class GenerateParams(BaseModel):
     update: bool
-    target: Optional[str] = None
+    target: str | None = None
 
 
 class BaseOutputPlugin:
@@ -133,7 +136,7 @@ class BaseOutputPlugin:
         self.config = config
 
     @releaseherald.plugins.hookimpl
-    def get_command_options(self, command: str) -> Optional[CommandOptions]:
+    def get_command_options(self, command: str) -> CommandOptions | None:
         command_options = (
             self._get_generate_options() if command == "generate" else None
         )
@@ -152,7 +155,7 @@ class BaseOutputPlugin:
             ),
         ]
 
-        def default_opts_callback(default_options: Dict[str, Any]):
+        def default_opts_callback(default_options: dict[str, Any]):
             default_options.update(
                 {
                     "update": self.config.update,
@@ -163,13 +166,13 @@ class BaseOutputPlugin:
         return CommandOptions(options, default_opts_callback)
 
     @releaseherald.plugins.hookimpl
-    def on_start_command(self, command: str, kwargs: Dict[str, Any]):
+    def on_start_command(self, command: str, kwargs: dict[str, Any]):
         if command == "generate":
             self.generate_command_params = GenerateParams(**kwargs)
 
     @releaseherald.plugins.hookimpl
     def generate_output(
-        self, version_news: List[VersionNews], output: MutableProxy[Output]
+        self, version_news: list[VersionNews], output: MutableProxy[Output]
     ):
         template_path = Path(self.config.template)
 
@@ -218,7 +221,7 @@ ROOT_TAG = "RELEASEHERALD_ROOT"
 
 def get_news_between_commits(
     commit1: Commit, commit2: Commit, news_fragment_dir: Path
-) -> List[News]:
+) -> list[News]:
     diffs = commit1.diff(commit2)
     # NOTE: ``a_path`` won't be None unless ``diff`` called with ``create_patch=True``
     paths = [

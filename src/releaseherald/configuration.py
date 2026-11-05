@@ -1,17 +1,12 @@
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
+from re import Pattern
 from typing import (
-    Pattern,
-    List,
-    Callable,
-    Dict,
     Any,
     ClassVar,
-    Optional,
-    Type,
     TypeVar,
-    DefaultDict,
 )
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -22,7 +17,7 @@ DEFAULT_FRAGMENTS_DIR = Path("news_fragments")
 
 DEFAULT_VERSION_TAG_PATTERN = re.compile(r"(?P<version>(\d*)\.(\d*)\.(\d*))")
 
-DefaultOptionsCallable = Callable[[Dict[str, Any]], None]
+DefaultOptionsCallable = Callable[[dict[str, Any]], None]
 
 MODEL = TypeVar("MODEL", bound=BaseModel)
 
@@ -40,21 +35,21 @@ class Configuration(BaseModel):
     template: Path = Path(templates.__path__[0]) / "news.rst"
     unreleased: bool = False
     news_file: Path = Path("news.rst")
-    target: Optional[Path] = None
+    target: Path | None = None
     last_tag: str = ""
     latest: bool = False
     update: bool = True
-    plugins: Optional[List[str]] = None
+    plugins: list[str] | None = None
 
     model_config = ConfigDict(extra="allow")
 
-    paths_to_resolve: ClassVar[List[str]] = ["template", "news_file"]
-    default_options_callbacks: ClassVar[Dict[str, List[DefaultOptionsCallable]]] = {
+    paths_to_resolve: ClassVar[list[str]] = ["template", "news_file"]
+    default_options_callbacks: ClassVar[dict[str, list[DefaultOptionsCallable]]] = {
         "generate": []
     }
 
-    def as_default_options(self) -> Dict[str, Any]:
-        result: DefaultDict[str, Any] = defaultdict(dict)
+    def as_default_options(self) -> dict[str, Any]:
+        result: defaultdict[str, Any] = defaultdict(dict)
         for command, callbacks in self.default_options_callbacks.items():
             for callback in callbacks:
                 callback(result[command])
@@ -62,8 +57,8 @@ class Configuration(BaseModel):
         return dict(result)
 
     def parse_sub_config(
-        self, attribute_name: str, sub_config_model: Type[MODEL]
-    ) -> Optional[MODEL]:
+        self, attribute_name: str, sub_config_model: type[MODEL]
+    ) -> MODEL | None:
         """
         Helper for plugin developers to parse a section of the config with the passed
         model, and replace the dictionary with the model object

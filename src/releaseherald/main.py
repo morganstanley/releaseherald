@@ -1,21 +1,21 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Union, Any, Optional, Dict
+from typing import Any
 
 import click
 import tomli
-from boltons.iterutils import pairwise, get_path
+from boltons.iterutils import get_path, pairwise
 from git import Repo, Tag
 from pluggy import PluginManager
 
 # TODO: Handle not yet committed change
 from releaseherald.configuration import Configuration
 from releaseherald.plugins.interface import (
-    VersionNews,
+    CommandOptions,
     MutableProxy,
     News,
     Output,
-    CommandOptions,
+    VersionNews,
 )
 from releaseherald.plugins.manager import get_pluginmanager
 from releaseherald.version import VERSION
@@ -25,17 +25,17 @@ PYPROJECT_TOML = "pyproject.toml"
 CONFIG_KEY_IN_PYPROJECT = ("tool", "releaseherald")
 
 
-def load_config(config_path: Path, config_key: Tuple = ()) -> Configuration:
+def load_config(config_path: Path, config_key: tuple = ()) -> Configuration:
     with open(config_path, "rb") as f:
         config = get_path(tomli.load(f), config_key, default={})
     config["config_path"] = config_path
     return Configuration.model_validate(config)
 
 
-ConfigKeyPathType = Union[Tuple, Tuple[Any, ...]]
+ConfigKeyPathType = tuple | tuple[Any, ...]
 
 
-def get_config(git_repo_dir: Path) -> Tuple[Optional[Path], ConfigKeyPathType]:
+def get_config(git_repo_dir: Path) -> tuple[Path | None, ConfigKeyPathType]:
     key: ConfigKeyPathType = ()
     path = git_repo_dir / CONFIG_FILE_NAME
     if not path.exists():
@@ -57,7 +57,7 @@ def cli(**kwargs):
 
 
 def get_version_news(pm, repo, commit_from, commit_to) -> VersionNews:
-    news: List[News] = []
+    news: list[News] = []
     pm.hook.get_news_between_commits(
         repo=repo, commit_from=commit_from, commit_to=commit_to, news=news
     )
@@ -76,11 +76,11 @@ def get_version_news(pm, repo, commit_from, commit_to) -> VersionNews:
 def collect_news_fragments(
     repo: Repo,
     pm: PluginManager,
-) -> List[VersionNews]:
-    tags: List[Tag] = []
+) -> list[VersionNews]:
+    tags: list[Tag] = []
     pm.hook.process_tags(repo=repo, tags=tags)
 
-    commits: List[Tag] = []
+    commits: list[Tag] = []
     pm.hook.process_commits(repo=repo, tags=tags, commits=commits)
 
     version_news = [
@@ -132,8 +132,8 @@ def generate(ctx: click.Context, **kwargs):
 )
 @click.pass_context
 def setup(
-    ctx: click.Context, git_dir, config: Optional[Path]
-) -> Tuple[Dict[str, Any], Context]:
+    ctx: click.Context, git_dir, config: Path | None
+) -> tuple[dict[str, Any], Context]:
     repo = Repo(path=git_dir, search_parent_directories=True)
 
     config_key: ConfigKeyPathType = ()
@@ -149,7 +149,7 @@ def setup(
 
     pm = get_pluginmanager(configuration)
 
-    generate_command_options: List[CommandOptions] = pm.hook.get_command_options(
+    generate_command_options: list[CommandOptions] = pm.hook.get_command_options(
         command="generate"
     )
 

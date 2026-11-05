@@ -1,6 +1,4 @@
-from typing import List, Optional
-
-from git import Tag, Repo
+from git import Repo, Tag
 from icecream import ic  # type: ignore
 
 import releaseherald.plugins
@@ -14,7 +12,7 @@ class DemoPlugin:
     """
 
     def __init__(self) -> None:
-        self.config: Optional[Configuration] = None
+        self.config: Configuration | None = None
 
     @releaseherald.plugins.hookimpl
     def process_config(self, config: Configuration):
@@ -22,5 +20,5 @@ class DemoPlugin:
         ic(config)
 
     @releaseherald.plugins.hookimpl
-    def process_tags(self, repo: Repo, tags: List[Tag]):
+    def process_tags(self, repo: Repo, tags: list[Tag]):
         ic(tags)

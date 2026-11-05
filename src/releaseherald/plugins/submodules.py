@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Pattern, List
+from re import Pattern
 
 from boltons.iterutils import pairwise
 from git import Commit, Repo  # type: ignore
@@ -7,16 +7,16 @@ from pydantic import BaseModel, TypeAdapter, model_validator
 
 import releaseherald.plugins
 from releaseherald.configuration import (
-    Configuration,
     DEFAULT_FRAGMENTS_DIR,
     DEFAULT_VERSION_TAG_PATTERN,
+    Configuration,
 )
-from releaseherald.plugins.base import get_tags, get_news_between_commits
+from releaseherald.plugins.base import get_news_between_commits, get_tags
 from releaseherald.plugins.interface import (
-    SubmoduleNews,
     CommitInfo,
-    News,
     MutableProxy,
+    News,
+    SubmoduleNews,
     VersionNews,
 )
 
@@ -31,7 +31,7 @@ class SubmoduleConfig(BaseModel):
     """
 
     name: str
-    display_name: Optional[str] = None
+    display_name: str | None = None
     news_fragments_directory: Path = DEFAULT_FRAGMENTS_DIR
     version_tag_pattern: Pattern = DEFAULT_VERSION_TAG_PATTERN
 
@@ -43,8 +43,8 @@ class SubmoduleConfig(BaseModel):
 
 class Submodules:
     def __init__(self) -> None:
-        self.config: Optional[Configuration] = None
-        self.submodule_config: List[SubmoduleConfig] = []
+        self.config: Configuration | None = None
+        self.submodule_config: list[SubmoduleConfig] = []
 
     @releaseherald.plugins.hookimpl
     def process_config(self, config: Configuration):
@@ -52,11 +52,12 @@ class Submodules:
         submodules = getattr(config, "submodules", None)
 
         if submodules:
-            self.submodule_config = TypeAdapter(List[SubmoduleConfig]).validate_python(
+            self.submodule_config = TypeAdapter(list[SubmoduleConfig]).validate_python(
                 submodules
             )
 
-        setattr(config, "submodules", self.submodule_config)
+        # `submodules` is an extra (undeclared) field, so mypy needs setattr here
+        setattr(config, "submodules", self.submodule_config)  # noqa: B010
 
     @releaseherald.plugins.hookimpl
     def get_version_news(
@@ -64,7 +65,7 @@ class Submodules:
         repo: Repo,
         commit_from: CommitInfo,
         commit_to: CommitInfo,
-        news: List[News],
+        news: list[News],
         version_news: MutableProxy[VersionNews],
     ):
         submodule_news = get_submodule_news(
@@ -73,7 +74,7 @@ class Submodules:
         version_news.value.submodule_news = submodule_news
 
 
-def get_submodule_commit(commit: Commit, name: str) -> Optional[Commit]:
+def get_submodule_commit(commit: Commit, name: str) -> Commit | None:
     repo = commit.repo
     try:
         submodule = repo.submodules[name]
@@ -87,8 +88,8 @@ def get_submodule_commit(commit: Commit, name: str) -> Optional[Commit]:
 
 
 def get_submodule_news(
-    commit_from: Commit, commit_to: Commit, submodules: List[SubmoduleConfig]
-) -> List[SubmoduleNews]:
+    commit_from: Commit, commit_to: Commit, submodules: list[SubmoduleConfig]
+) -> list[SubmoduleNews]:
     news = []
     for submodule in submodules:
         submodule_from = get_submodule_commit(commit_from, submodule.name)

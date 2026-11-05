@@ -1,9 +1,9 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, DefaultDict
+from typing import Any
 
 import click
-from boltons.cacheutils import cached, LRI
+from boltons.cacheutils import LRI, cached
 from pydantic import BaseModel
 
 from releaseherald.plugins.interface import CommandOptions
@@ -32,8 +32,8 @@ class UpdateMapping:
 
 @dataclass
 class CommandOptionsInfo:
-    options: List[click.Option] = field(default_factory=list)
-    update_mappings: List[UpdateMapping] = field(default_factory=list)
+    options: list[click.Option] = field(default_factory=list)
+    update_mappings: list[UpdateMapping] = field(default_factory=list)
 
 
 class PluginConfig(BaseModel):
@@ -81,8 +81,8 @@ class PluginConfig(BaseModel):
 
     @classmethod
     @cached(LRI())
-    def _get_command_options_info(cls) -> Dict[str, CommandOptionsInfo]:
-        command_options: DefaultDict[str, CommandOptionsInfo] = defaultdict(
+    def _get_command_options_info(cls) -> dict[str, CommandOptionsInfo]:
+        command_options: defaultdict[str, CommandOptionsInfo] = defaultdict(
             CommandOptionsInfo
         )
 
@@ -104,7 +104,7 @@ class PluginConfig(BaseModel):
 
         return dict(command_options)
 
-    def get_command_options(self, command: str) -> Optional[CommandOptions]:
+    def get_command_options(self, command: str) -> CommandOptions | None:
         """
         Generate command options from Annotated fields which can be returned directly from
         [get_command_options hook][releaseherald.plugins.hookspecs.get_command_options]
@@ -121,7 +121,7 @@ class PluginConfig(BaseModel):
 
         if command_options:
 
-            def default_opts_callback(default_options: Dict[str, Any]):
+            def default_opts_callback(default_options: dict[str, Any]):
                 for update_mapping in command_options.update_mappings:
                     default_options[update_mapping.option_name] = getattr(
                         self, update_mapping.field_name
@@ -130,7 +130,7 @@ class PluginConfig(BaseModel):
             return CommandOptions(command_options.options, default_opts_callback)
         return None
 
-    def update(self, command: str, kwargs: Dict[str, Any]) -> None:
+    def update(self, command: str, kwargs: dict[str, Any]) -> None:
         """
         Update itself from commandline options, can be used in
         [on_start_command hook][releaseherald.plugins.hookspecs.on_start_command]

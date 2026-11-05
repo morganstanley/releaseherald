@@ -1,15 +1,13 @@
-from typing import Type, Dict
-
 import pluggy
 
-from releaseherald.plugins import hookspecs
 from releaseherald.configuration import Configuration
-from releaseherald.plugins.base import BasePlugin, BaseOutputPlugin
+from releaseherald.plugins import hookspecs
+from releaseherald.plugins.base import BaseOutputPlugin, BasePlugin
 from releaseherald.plugins.latest_filter import LatestFilter
 from releaseherald.plugins.metadata_extractor import FilenameMetadataExtractor
 from releaseherald.plugins.submodules import Submodules
 
-INTERNAL_PLUGINS: Dict[str, Type[object]] = {
+INTERNAL_PLUGINS: dict[str, type[object]] = {
     "base": BasePlugin,
     "base_output": BaseOutputPlugin,
     "filename_metadata_extractor": FilenameMetadataExtractor,

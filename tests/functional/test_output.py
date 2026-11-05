@@ -25,6 +25,7 @@ class TestOutput:
             capture_output=True,
             cwd=repo.working_dir,
             env={**os.environ, "TZ": "UTC0"},
+            check=False,
         )
 
         expected_output_path = (

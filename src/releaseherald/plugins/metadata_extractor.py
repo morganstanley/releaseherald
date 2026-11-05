@@ -2,14 +2,13 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Dict, Type
 
 import parse
 from pydantic import BaseModel
 
 import releaseherald.plugins
 from releaseherald.configuration import Configuration
-from releaseherald.plugins.interface import VersionNews, News
+from releaseherald.plugins.interface import News, VersionNews
 
 
 class ParserType(str, Enum):
@@ -27,7 +26,7 @@ class FilenameMetadataExtractorConfig(BaseModel):
 
     type: ParserType
     pattern: str
-    target_attribute: Optional[str] = None
+    target_attribute: str | None = None
 
 
 CONFIG_ATTRIBUTE = "filename_metadata_extractor"
@@ -38,7 +37,7 @@ class Extractor(ABC):
         pass
 
     @abstractmethod
-    def match(self, text: str) -> Optional[Dict[str, str]]: ...
+    def match(self, text: str) -> dict[str, str] | None: ...
 
 
 class RegexExtractor(Extractor):
@@ -46,7 +45,7 @@ class RegexExtractor(Extractor):
         super().__init__(pattern)
         self.pattern = re.compile(pattern)
 
-    def match(self, text: str) -> Optional[Dict[str, str]]:
+    def match(self, text: str) -> dict[str, str] | None:
         match = self.pattern.match(text)
         if match:
             return match.groupdict()
@@ -59,7 +58,7 @@ class ParseExtractor(Extractor):
         super().__init__(pattern)
         self.pattern = parse.compile(pattern)
 
-    def match(self, text: str) -> Optional[Dict[str, str]]:
+    def match(self, text: str) -> dict[str, str] | None:
         result = self.pattern.parse(text)
         if result:
             return result.named
@@ -67,7 +66,7 @@ class ParseExtractor(Extractor):
         return None
 
 
-MATCHER_FACTORY_MAP: Dict[ParserType, Type[Extractor]] = {
+MATCHER_FACTORY_MAP: dict[ParserType, type[Extractor]] = {
     ParserType.RE: RegexExtractor,
     ParserType.PARSE: ParseExtractor,
 }
@@ -75,8 +74,8 @@ MATCHER_FACTORY_MAP: Dict[ParserType, Type[Extractor]] = {
 
 class FilenameMetadataExtractor:
     def __init__(self) -> None:
-        self.target_attribute: Optional[str] = None
-        self.extractor: Optional[Extractor] = None
+        self.target_attribute: str | None = None
+        self.extractor: Extractor | None = None
 
     @releaseherald.plugins.hookimpl
     def process_config(self, config: Configuration):
@@ -91,7 +90,7 @@ class FilenameMetadataExtractor:
             )
 
     @releaseherald.plugins.hookimpl
-    def process_version_news(self, version_news: List[VersionNews]):
+    def process_version_news(self, version_news: list[VersionNews]):
         if self.extractor is None:
             return
 
@@ -100,7 +99,7 @@ class FilenameMetadataExtractor:
             for submodule in version.submodule_news:
                 self.process_news_list(submodule.news)
 
-    def process_news_list(self, news_list: List[News]):
+    def process_news_list(self, news_list: list[News]):
         for news in news_list:
             self.extend_news(news)
 

@@ -1,8 +1,8 @@
 import io
 import json
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Iterator
 
 import pytest
 from git import Repo
@@ -12,7 +12,7 @@ from git import Repo
 class OutputTestcase:
     name: str
     branch: str
-    commandline: List[str]
+    commandline: list[str]
 
 
 TEST_REPO_PATH = Path(__file__).parent / "test_repo"
@@ -36,7 +36,7 @@ def collect_output_testcases(current_branch: bool = False):
         path = repo.heads.main.commit.tree / "tests.json"
         branches = json.load(io.BytesIO(path.data_stream.read()))
 
-    result: List[OutputTestcase] = []
+    result: list[OutputTestcase] = []
 
     for branch in branches:
         case_file = repo.heads[branch].commit.tree / "cases.json"

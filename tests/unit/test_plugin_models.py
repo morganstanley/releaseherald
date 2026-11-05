@@ -1,7 +1,7 @@
+from releaseherald.configuration import Configuration
 from releaseherald.plugins.base import GenerateParams
 from releaseherald.plugins.metadata_extractor import FilenameMetadataExtractorConfig
 from releaseherald.plugins.submodules import SubmoduleConfig, Submodules
-from releaseherald.configuration import Configuration
 
 
 def test_generate_params_optional_target():
