@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 import click
 from git import Repo, Tag
@@ -20,7 +20,7 @@ class LatestFilter:
         self.config = config
 
     @releaseherald.plugins.hookimpl
-    def get_command_options(self, command: str) -> Optional[CommandOptions]:
+    def get_command_options(self, command: str) -> CommandOptions | None:
         command_options = (
             self._get_generate_options() if command == "generate" else None
         )
@@ -35,18 +35,18 @@ class LatestFilter:
             ),
         ]
 
-        def default_opts_callback(default_options: Dict[str, Any]):
+        def default_opts_callback(default_options: dict[str, Any]):
             default_options["latest"] = self.config.latest
 
         return CommandOptions(options, default_opts_callback)
 
     @releaseherald.plugins.hookimpl
-    def on_start_command(self, command: str, kwargs: Dict[str, Any]):
+    def on_start_command(self, command: str, kwargs: dict[str, Any]):
         if command == "generate":
             self.filter_latest = kwargs["latest"]
 
     @releaseherald.plugins.hookimpl(trylast=True)
-    def process_commits(self, repo: Repo, tags: List[Tag], commits: List[CommitInfo]):
+    def process_commits(self, repo: Repo, tags: list[Tag], commits: list[CommitInfo]):
         if self.filter_latest and len(commits) > 2:
             trimmed_commits = commits[0:2]
             commits.clear()

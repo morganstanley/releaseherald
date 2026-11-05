@@ -1,0 +1,1 @@
+Drop support for Python 3.9, add support for 3.13 & 3.14.

@@ -1,9 +1,9 @@
 import datetime
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import click
-from git import TagReference, Commit  # type: ignore
+from git import Commit, TagReference  # type: ignore
 
 from releaseherald.configuration import DefaultOptionsCallable
 
@@ -23,7 +23,7 @@ class CommandOptions:
             a callback that promote config settings to defaults to the above options
     """
 
-    options: List[click.Option]
+    options: list[click.Option]
     default_opts_callback: DefaultOptionsCallable
 
 
@@ -36,7 +36,7 @@ class MutableProxy(Generic[VT]):
         value VT: the value the proxy holds
     """
 
-    def __init__(self, value: Optional[VT] = None):
+    def __init__(self, value: VT | None = None):
         self._value = value
 
     @property
@@ -44,7 +44,7 @@ class MutableProxy(Generic[VT]):
         return self._value
 
     @value.setter
-    def value(self, value: Optional[VT]):
+    def value(self, value: VT | None):
         self._value = value
 
 
@@ -60,7 +60,7 @@ class CommitInfo:
             else the commit date
     """
 
-    tag: Optional[TagReference]
+    tag: TagReference | None
     commit: Commit
 
     @property
@@ -89,7 +89,7 @@ class News:
 
     file_name: str
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -106,8 +106,8 @@ class SubmoduleNews:
 
     name: str
     display_name: str
-    news: List[News] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    news: list[News] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -125,14 +125,14 @@ class VersionNews:
         metadata: a data store for plugins to attach extra data
     """
 
-    news: List[News]
+    news: list[News]
     tag: str
     version: str
     from_commit: CommitInfo
     to_commit: CommitInfo
     date: datetime.datetime
-    submodule_news: List[SubmoduleNews] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    submodule_news: list[SubmoduleNews] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -148,4 +148,4 @@ class Output:
 
     format: str
     content: Any
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)

@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 
@@ -23,6 +24,8 @@ class TestOutput:
             ["releaseherald", "generate", *output_testcase.commandline],
             capture_output=True,
             cwd=repo.working_dir,
+            env={**os.environ, "TZ": "UTC0"},
+            check=False,
         )
 
         expected_output_path = (

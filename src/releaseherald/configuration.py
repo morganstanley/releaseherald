@@ -1,19 +1,15 @@
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
+from re import Pattern
 from typing import (
-    Pattern,
-    List,
-    Callable,
-    Dict,
     Any,
-    Optional,
-    Type,
+    ClassVar,
     TypeVar,
-    DefaultDict,
 )
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from releaseherald import templates
 
@@ -21,7 +17,7 @@ DEFAULT_FRAGMENTS_DIR = Path("news_fragments")
 
 DEFAULT_VERSION_TAG_PATTERN = re.compile(r"(?P<version>(\d*)\.(\d*)\.(\d*))")
 
-DefaultOptionsCallable = Callable[[Dict[str, Any]], None]
+DefaultOptionsCallable = Callable[[dict[str, Any]], None]
 
 MODEL = TypeVar("MODEL", bound=BaseModel)
 
@@ -39,34 +35,30 @@ class Configuration(BaseModel):
     template: Path = Path(templates.__path__[0]) / "news.rst"
     unreleased: bool = False
     news_file: Path = Path("news.rst")
-    target: Optional[Path] = None
+    target: Path | None = None
     last_tag: str = ""
     latest: bool = False
     update: bool = True
-    plugins: Optional[List[str]] = None
+    plugins: list[str] | None = None
 
-    class Config:
-        paths_to_resolve: List[str] = ["template", "news_file"]
-        default_options_callbacks: Dict[str, List[DefaultOptionsCallable]] = {
-            "generate": []
-        }
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
-    def as_default_options(self) -> Dict[str, Any]:
-        default_options_callbacks: Dict[str, List[DefaultOptionsCallable]] = (
-            self.Config.default_options_callbacks
-        )
+    paths_to_resolve: ClassVar[list[str]] = ["template", "news_file"]
+    default_options_callbacks: ClassVar[dict[str, list[DefaultOptionsCallable]]] = {
+        "generate": []
+    }
 
-        result: DefaultDict[str, Any] = defaultdict(dict)
-        for command, callbacks in default_options_callbacks.items():
+    def as_default_options(self) -> dict[str, Any]:
+        result: defaultdict[str, Any] = defaultdict(dict)
+        for command, callbacks in self.default_options_callbacks.items():
             for callback in callbacks:
                 callback(result[command])
 
         return dict(result)
 
     def parse_sub_config(
-        self, attribute_name: str, sub_config_model: Type[MODEL]
-    ) -> Optional[MODEL]:
+        self, attribute_name: str, sub_config_model: type[MODEL]
+    ) -> MODEL | None:
         """
         Helper for plugin developers to parse a section of the config with the passed
         model, and replace the dictionary with the model object
@@ -80,7 +72,7 @@ class Configuration(BaseModel):
 
         """
         config = getattr(self, attribute_name, None)
-        parsed_config = sub_config_model.parse_obj(config) if config else None
+        parsed_config = sub_config_model.model_validate(config) if config else None
         setattr(self, attribute_name, parsed_config)
         return parsed_config
 
@@ -100,23 +92,21 @@ class Configuration(BaseModel):
         root = _config_root(self.config_path)
         return _resolve_path(root, path)
 
-    @root_validator
-    def resolve_paths(cls, values):
-        config_path = Path(values["config_path"])
-        root = _config_root(config_path)
-        values = values.copy()
-        for path_config in cls.__config__.paths_to_resolve:
-            path = Path(values[path_config])
-            values[path_config] = _resolve_path(root, path)
+    @model_validator(mode="after")
+    def resolve_paths(self) -> "Configuration":
+        root = _config_root(self.config_path)
+        for path_config in self.paths_to_resolve:
+            path = Path(getattr(self, path_config))
+            setattr(self, path_config, _resolve_path(root, path))
 
-        return values
+        return self
 
-    @root_validator
-    def validate_last_tag(cls, values):
-        if not values["last_tag"]:
-            return values
-        if re.match(values["version_tag_pattern"], values["last_tag"]):
-            return values
+    @model_validator(mode="after")
+    def validate_last_tag(self) -> "Configuration":
+        if not self.last_tag:
+            return self
+        if re.match(self.version_tag_pattern, self.last_tag):
+            return self
         raise ValueError("``last_tag`` must match ``version_tag_pattern``")
 
 

@@ -1,9 +1,9 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, DefaultDict
+from typing import Any
 
 import click
-from boltons.cacheutils import cached, LRI
+from boltons.cacheutils import LRI, cached
 from pydantic import BaseModel
 
 from releaseherald.plugins.interface import CommandOptions
@@ -32,8 +32,8 @@ class UpdateMapping:
 
 @dataclass
 class CommandOptionsInfo:
-    options: List[click.Option] = field(default_factory=list)
-    update_mappings: List[UpdateMapping] = field(default_factory=list)
+    options: list[click.Option] = field(default_factory=list)
+    update_mappings: list[UpdateMapping] = field(default_factory=list)
 
 
 class PluginConfig(BaseModel):
@@ -81,17 +81,13 @@ class PluginConfig(BaseModel):
 
     @classmethod
     @cached(LRI())
-    def _get_command_options_info(cls) -> Dict[str, CommandOptionsInfo]:
-        command_options: DefaultDict[str, CommandOptionsInfo] = defaultdict(
+    def _get_command_options_info(cls) -> dict[str, CommandOptionsInfo]:
+        command_options: defaultdict[str, CommandOptionsInfo] = defaultdict(
             CommandOptionsInfo
         )
 
-        for config_field in cls.__fields__.values():
-            metadata = getattr(config_field.outer_type_, "__metadata__", None)
-            if not metadata:
-                continue
-
-            for annotation in metadata:
+        for field_name, field_info in cls.model_fields.items():
+            for annotation in field_info.metadata:
                 if not isinstance(annotation, FromCommandline):
                     continue
                 command = command_options[annotation.command]
@@ -99,16 +95,16 @@ class PluginConfig(BaseModel):
                 command.options.append(annotation.option)
                 if not annotation.option.name:
                     raise AttributeError(
-                        f"{config_field.name} field config option should have a name "
+                        f"{field_name} field config option should have a name "
                         f"in {cls.__name__}"
                     )
                 command.update_mappings.append(
-                    UpdateMapping(config_field.name, annotation.option.name)
+                    UpdateMapping(field_name, annotation.option.name)
                 )
 
         return dict(command_options)
 
-    def get_command_options(self, command: str) -> Optional[CommandOptions]:
+    def get_command_options(self, command: str) -> CommandOptions | None:
         """
         Generate command options from Annotated fields which can be returned directly from
         [get_command_options hook][releaseherald.plugins.hookspecs.get_command_options]
@@ -125,7 +121,7 @@ class PluginConfig(BaseModel):
 
         if command_options:
 
-            def default_opts_callback(default_options: Dict[str, Any]):
+            def default_opts_callback(default_options: dict[str, Any]):
                 for update_mapping in command_options.update_mappings:
                     default_options[update_mapping.option_name] = getattr(
                         self, update_mapping.field_name
@@ -134,7 +130,7 @@ class PluginConfig(BaseModel):
             return CommandOptions(command_options.options, default_opts_callback)
         return None
 
-    def update(self, command: str, kwargs: Dict[str, Any]) -> None:
+    def update(self, command: str, kwargs: dict[str, Any]) -> None:
         """
         Update itself from commandline options, can be used in
         [on_start_command hook][releaseherald.plugins.hookspecs.on_start_command]

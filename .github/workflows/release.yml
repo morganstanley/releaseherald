@@ -28,10 +28,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Set up Python 3.7
+      - name: Set up Python 3.10
         uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4.7.1
         with:
-          python-version: 3.7
+          python-version: "3.10"
       - run: pip install --upgrade pip
       - run: pip install build bumpver
       - name: git setup
